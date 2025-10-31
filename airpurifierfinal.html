@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Air Purifier Simulation </title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #e8f5e9;
+    text-align: center;
+  }
+  h1 { color: #00796b; margin-top: 20px; }
+
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+  label { font-weight: bold; color: #004d40; }
+  input[type="range"] { width: 100px; }
+
+  .purifier {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 30px auto;
+    width: 90%;
+    max-width: 950px;
+    height: 250px;
+    border: 3px solid #00796b;
+    border-radius: 20px;
+    background: white;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .section {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    color: white;
+    transition: background 1s ease;
+  }
+
+  .dusty-air { background: #7c1cb7; }
+  .pre-filter { background: #8d6e63; }
+  .carbon-filter { background: #616161; }
+  .hepa-filter { background: #1565c0; }
+  .uv-filter { background: #fbc02d; color: black; }
+  .clean-air { background: #4caf50; position: relative; overflow: hidden; }
+
+  /* Dust particle animation */
+  .dust {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    opacity: 0.9;
+    transition: background 1s linear, opacity 1s linear;
+  }
+
+  /* Human figure */
+  .human {
+    position: absolute;
+    right: -60px;
+    bottom: 40px;
+    width: 40px;
+    height: 100px;
+    background: #f5c6a5;
+    border-radius: 20px 20px 10px 10px;
+    box-shadow: inset 0 -10px 0 #795548;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .head {
+    position: absolute;
+    top: -30px;
+    width: 40px;
+    height: 40px;
+    background: #ffcc80;
+    border-radius: 50%;
+    border: 2px solid #5d4037;
+  }
+
+  /* Chest glow breathing effect */
+  .chest-glow {
+    position: absolute;
+    top: 35px;
+    width: 25px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(135,206,250,0.8), transparent 70%);
+    opacity: 0;
+    animation: breathe 3s infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.1; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* Clean air wave animation */
+  .wave {
+    position: absolute;
+    width: 40px;
+    height: 10px;
+    background: rgba(173, 255, 47, 0.6);
+    border-radius: 50%;
+    right: -50px;
+    bottom: 60px;
+    animation: airwave 2s infinite linear;
+  }
+
+  @keyframes airwave {
+    from { right: 0; opacity: 0.9; transform: scale(1); }
+    to { right: -80px; opacity: 0; transform: scale(1.5); }
+  }
+
+  .variables, .extra-info {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+    color: #004d40;
+    font-weight: bold;
+  }
+  .variable {
+    background: #ffffff;
+    border: 2px solid #00796b;
+    border-radius: 10px;
+    padding: 10px 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+
+  button {
+    background: #00796b;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  button:hover { background: #004d40; }
+
+  .filter-control { margin-top: 10px; }
+
+  .aqi {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: bold;
+    color: white;
+  }
+</style>
+</head>
+<body>
+  <h1>Air Purifier Simulation </h1>
+
+  <div class="controls">
+    <label>💨 Air Speed:</label>
+    <input type="range" id="airSpeed" min="1" max="5" step="0.5" value="2">
+    <label>🔋 Fan Power:</label>
+    <input type="range" id="fanPower" min="40" max="100" step="5" value="70">
+    <label>🌫️ PM2.5:</label>
+    <input type="range" id="pmLevel" min="50" max="300" step="10" value="150">
+  </div>
+
+  <div class="filter-control">
+    <label><input type="checkbox" id="pre" checked> Pre Filter</label>
+    <label><input type="checkbox" id="carbon" checked> Carbon Filter</label>
+    <label><input type="checkbox" id="hepa" checked> HEPA Filter</label>
+    <label><input type="checkbox" id="uv"> UV Filter</label>
+  </div>
+
+  <div class="purifier" id="purifier"></div>
+
+  <div class="variables">
+    <div class="variable" id="pmDisplay">🌫️ PM2.5: 150 µg/m³</div>
+    <div class="variable" id="speedDisplay">💨 Air Speed: 2.0 m/s</div>
+    <div class="variable" id="powerDisplay">🔋 Fan Power: 70%</div>
+    <div class="variable" id="efficiencyDisplay">🧾 Efficiency: 0%</div>
+  </div>
+
+  <div class="extra-info">
+    <div class="variable" id="filterLife">🧩 Filter Life: 100%</div>
+    <div class="variable" id="aqiBox">🌈 AQI: <span class="aqi" id="aqiValue" style="background:#4caf50">Good</span></div>
+    <div class="variable" id="timer">⏱ Runtime: 0s</div>
+  </div>
+
+  <div style="margin-top:20px;">
+    <button onclick="startSimulation()">▶️ Start Simulation</button>
+    <button onclick="stopSimulation()">⏹ Stop Simulation</button>
+  </div>
+
+<script>
+const purifier = document.getElementById("purifier");
+const pmDisplay = document.getElementById("pmDisplay");
+const speedDisplay = document.getElementById("speedDisplay");
+const powerDisplay = document.getElementById("powerDisplay");
+const efficiencyDisplay = document.getElementById("efficiencyDisplay");
+const filterLife = document.getElementById("filterLife");
+const aqiValue = document.getElementById("aqiValue");
+const timerDisplay = document.getElementById("timer");
+
+const airSpeedInput = document.getElementById("airSpeed");
+const fanPowerInput = document.getElementById("fanPower");
+const pmInput = document.getElementById("pmLevel");
+const pre = document.getElementById("pre");
+const carbon = document.getElementById("carbon");
+const hepa = document.getElementById("hepa");
+const uv = document.getElementById("uv");
+
+let interval, timeInterval;
+let dustParticles = [];
+let filterHealth = 100, timeElapsed = 0;
+
+function makeSection(label, cls) {
+  const div = document.createElement("div");
+  div.className = cls + " section";
+  div.textContent = label;
+  return div;
+}
+
+function createPurifierLayout() {
+  purifier.innerHTML = "";
+  const filters = [];
+  purifier.appendChild(makeSection("Dusty Air", "dusty-air"));
+  if (pre.checked) filters.push(makeSection("Pre Filter", "pre-filter"));
+  if (carbon.checked) filters.push(makeSection("Carbon Filter", "carbon-filter"));
+  if (hepa.checked) filters.push(makeSection("HEPA Filter", "hepa-filter"));
+  if (uv.checked) filters.push(makeSection("UV Filter", "uv-filter"));
+  filters.forEach(f => purifier.appendChild(f));
+  purifier.appendChild(makeSection("Clean Air", "clean-air"));
+
+  const cleanAir = purifier.querySelector(".clean-air");
+
+  // Human breathing figure
+  const human = document.createElement("div");
+  human.className = "human";
+  const head = document.createElement("div");
+  head.className = "head";
+  const chest = document.createElement("div");
+  chest.className = "chest-glow";
+  human.appendChild(head);
+  human.appendChild(chest);
+  cleanAir.appendChild(human);
+
+  // Air waves
+  for (let i = 0; i < 3; i++) {
+    const wave = document.createElement("div");
+    wave.className = "wave";
+    wave.style.animationDelay = i * 0.7 + "s";
+    cleanAir.appendChild(wave);
+  }
+}
+
+function startSimulation() {
+  stopSimulation();
+  createPurifierLayout();
+  generateDust();
+  timeElapsed = 0;
+  interval = setInterval(updateDust, 100);
+  timeInterval = setInterval(() => {
+    timeElapsed++;
+    timerDisplay.textContent = `⏱ Runtime: ${timeElapsed}s`;
+  }, 1000);
+}
+
+function stopSimulation() {
+  clearInterval(interval);
+  clearInterval(timeInterval);
+  dustParticles.forEach(d => d.remove());
+  dustParticles = [];
+}
+
+function generateDust() {
+  for (let i = 0; i < 20; i++) {
+    const dust = document.createElement("div");
+    dust.className = "dust";
+    dust.style.top = Math.random() * 200 + "px";
+    dust.style.left = Math.random() * 100 + "px";
+    purifier.appendChild(dust);
+    dustParticles.push(dust);
+  }
+}
+
+function updateDust() {
+  const speed = parseFloat(airSpeedInput.value);
+  const power = parseInt(fanPowerInput.value);
+  let pmValue = parseInt(pmInput.value);
+  let efficiency = 0;
+
+  if (pre.checked) efficiency += 10;
+  if (carbon.checked) efficiency += 20;
+  if (hepa.checked) efficiency += 40;
+  if (uv.checked) efficiency += 20;
+
+  efficiency -= Math.max(0, (speed - 3) * 5);
+  pmValue -= efficiency / 2;
+  pmValue = Math.max(5, pmValue);
+  filterHealth = Math.max(0, filterHealth - 0.05);
+
+  dustParticles.forEach(dust => {
+    let left = parseFloat(dust.style.left);
+    left += speed * 4;
+    dust.style.left = left + "px";
+    if (left > purifier.clientWidth - 20) {
+      dust.style.left = "0px";
+      dust.style.top = Math.random() * 200 + "px";
+    }
+
+    if (left < 150) dust.style.background = "#b71c1c";
+    else if (left < 300) dust.style.background = pre.checked ? "#ff9800" : "#b71c1c";
+    else if (left < 450) dust.style.background = carbon.checked ? "#9e9e9e" : "#ff9800";
+    else if (left < 600) dust.style.background = hepa.checked ? "#64b5f6" : "#9e9e9e";
+    else dust.style.background = uv.checked ? "#81c784" : "#64b5f6";
+
+    // Dust fades as it gets cleaner
+    dust.style.opacity = 1 - (left / purifier.clientWidth) * 0.9;
+  });
+
+  let aqiColor = "#4caf50", aqiText = "Good";
+  if (pmValue > 200) { aqiColor = "#b71c1c"; aqiText = "Hazardous"; }
+  else if (pmValue > 150) { aqiColor = "#e65100"; aqiText = "Unhealthy"; }
+  else if (pmValue > 80) { aqiColor = "#fbc02d"; aqiText = "Moderate"; }
+
+  pmDisplay.textContent = `🌫️ PM2.5: ${pmValue.toFixed(1)} µg/m³`;
+  speedDisplay.textContent = `💨 Air Speed: ${speed.toFixed(1)} m/s`;
+  powerDisplay.textContent = `🔋 Fan Power: ${power}%`;
+  efficiencyDisplay.textContent = `🧾 Efficiency: ${efficiency}%`;
+  filterLife.textContent = `🧩 Filter Life: ${filterHealth.toFixed(0)}%`;
+  aqiValue.textContent = aqiText;
+  aqiValue.style.background = aqiColor;
+}
+</script>
+</body>
+</html>
